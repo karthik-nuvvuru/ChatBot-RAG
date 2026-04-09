@@ -1,0 +1,82 @@
+[tool.poetry]
+name = "conversation-ai-platform"
+version = "1.0.0"
+description = "NelloreRuchullu - Production-ready conversational AI platform with memory, vector search, and real-time streaming"
+authors = ["Development Team"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# FastAPI and server
+fastapi = "^0.110.0"
+uvicorn = {extras = ["standard"], version = "^0.27.0"}
+
+# Database
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.25"}
+asyncpg = "^0.29.0"
+psycopg2-binary = "^2.9.9"
+alembic = "^1.13.1"
+pgvector = "^0.2.0"
+
+# Redis and caching
+redis = "^5.0.1"
+
+# Celery
+celery = "^5.3.6"
+
+# Azure OpenAI and OpenAI
+openai = "^1.12.0"
+
+# HTTP client
+httpx = "^0.26.0"
+
+# WebSockets
+websockets = "^12.0"
+
+# Pydantic and settings
+pydantic = "^2.5.3"
+pydantic-settings = "^2.1.0"
+python-dotenv = "^1.0.0"
+
+# Security
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-multipart = "^0.0.6"
+
+# Utilities
+tenacity = "^8.2.3"
+prometheus-client = "^0.19.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.4"
+pytest-asyncio = "^0.23.3"
+pytest-cov = "^4.1.0"
+httpx = "^0.26.0"
+black = "^24.2.0"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
