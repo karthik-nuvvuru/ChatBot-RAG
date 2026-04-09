@@ -52,6 +52,9 @@ logs/
 # Docker
 docker/storage/
 
+# Documentation
+docs/
+
 # Alembic
 alembic.ini
 

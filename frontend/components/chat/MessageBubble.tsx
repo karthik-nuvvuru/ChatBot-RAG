@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo, useCallback, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { Copy, Check, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Copy, Check, RotateCcw, User, Bot } from 'lucide-react'
 import { cn, formatTime, copyToClipboard } from '@/lib/utils'
 import type { Message } from '@/types/api'
 
@@ -14,14 +14,15 @@ interface MessageBubbleProps {
   onRetry?: () => void
 }
 
-export function MessageBubble({ message, isStreaming, onRetry }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({
+  message,
+  isStreaming,
+  onRetry,
+}: MessageBubbleProps) {
   const [copied, setCopied] = useState(false)
-  const [showFeedback, setShowFeedback] = useState(false)
-
   const isUser = message.role === 'user'
-  const isAssistant = message.role === 'assistant'
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     try {
       await copyToClipboard(message.content)
       setCopied(true)
@@ -29,150 +30,119 @@ export function MessageBubble({ message, isStreaming, onRetry }: MessageBubblePr
     } catch (err) {
       console.error('Failed to copy:', err)
     }
-  }
+  }, [message.content])
 
-  const codeBlocks = useMemo(() => {
-    if (!isAssistant) return null
-
-    const parts: React.ReactNode[] = []
-    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
-    let lastIndex = 0
-    let match
-    let key = 0
-
-    const text = message.content
-
-    while ((match = codeBlockRegex.exec(text)) !== null) {
-      // Add text before code block
-      if (match.index > lastIndex) {
-        const textPart = text.slice(lastIndex, match.index)
-        parts.push(
-          <div key={key++} className="prose prose-invert prose-sm max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {textPart}
-            </ReactMarkdown>
-          </div>
-        )
-      }
-
-      // Add code block with syntax highlighting
-      const language = match[1] || 'plaintext'
-      const code = match[2].trim()
-
-      parts.push(
-        <div key={key++} className="relative group rounded-lg overflow-hidden my-2">
-          <div className="absolute top-2 right-2 z-10">
-            <button
-              onClick={handleCopy}
-              className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              {copied ? (
-                <Check className="w-4 h-4 text-green-400" />
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-          <SyntaxHighlighter
-            language={language}
-            className="!bg-gray-800 !text-gray-100 text-sm rounded-lg"
-          >
-            {code}
-          </SyntaxHighlighter>
-        </div>
-      )
-
-      lastIndex = match.index + match[0].length
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      const textPart = text.slice(lastIndex)
-      parts.push(
-        <div key={key++} className="prose prose-invert prose-sm max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {textPart}
-          </ReactMarkdown>
-        </div>
+  // Parse markdown content
+  const renderContent = useCallback(() => {
+    if (isStreaming) {
+      return (
+        <span className="text-sm leading-relaxed">
+          {message.content}
+          <span className="inline-block w-0.5 h-4 bg-primary ml-1 animate-cursor rounded-full" />
+        </span>
       )
     }
 
-    return parts.length > 0 ? parts : null
-  }, [message.content, isAssistant, copied, handleCopy])
+    return (
+      <div className="prose-dark">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          {message.content}
+        </ReactMarkdown>
+      </div>
+    )
+  }, [message.content, isStreaming])
 
   return (
     <div
       className={cn(
-        "flex animate-fade-in",
+        "flex w-full animate-fade-in-up",
         isUser ? "justify-end" : "justify-start"
       )}
     >
       <div
         className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-3",
-          isUser
-            ? "bg-blue-600 text-white"
-            : "bg-gray-800 text-gray-100",
-          isStreaming && "animate-pulse-glow"
+          "max-w-[80%] flex gap-3",
+          isUser ? "flex-row-reverse" : "flex-row"
         )}
       >
-        {/* Avatar and name for assistant */}
-        {!isUser && (
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold">
-              AI
-            </div>
-            <span className="text-sm font-medium text-gray-400">Assistant</span>
-          </div>
-        )}
-
-        {/* Message content */}
-        <div className="prose prose-invert prose-sm max-w-none">
-          {codeBlocks || (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
-            </ReactMarkdown>
+        {/* Avatar */}
+        <div
+          className={cn(
+            "avatar flex-shrink-0",
+            isUser ? "avatar-user" : "avatar-ai"
           )}
+        >
+          {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
         </div>
 
-        {/* Streaming cursor */}
-        {isStreaming && (
-          <span className="inline-block w-2 h-4 bg-blue-400 animate-pulse ml-1" />
-        )}
+        {/* Message bubble */}
+        <div
+          className={cn(
+            "relative group",
+            isUser ? "items-end" : "items-start"
+          )}
+        >
+          <div
+            className={cn(
+              isUser ? "message-user" : "message-assistant"
+            )}
+          >
+            {renderContent()}
+          </div>
 
-        {/* Footer with time and actions */}
-        <div className={cn(
-          "flex items-center justify-between mt-2 pt-2 border-t border-opacity-20",
-          isUser ? "border-white/20 justify-end" : "border-gray-700"
-        )}>
-          <span className={cn(
-            "text-xs",
-            isUser ? "text-white/70" : "text-gray-500"
-          )}>
-            {formatTime(message.created_at)}
-          </span>
-
-          {/* Feedback buttons for assistant */}
-          {isAssistant && !isStreaming && (
-            <div className="flex items-center gap-1">
+          {/* Actions bar (show on hover) */}
+          {!isStreaming && (
+            <div
+              className={cn(
+                "absolute -top-2 flex items-center gap-1 px-2 py-1 rounded-lg border transition-all duration-200",
+                "opacity-0 group-hover:opacity-100",
+                isUser ? "right-0" : "left-0"
+              )}
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+            >
               <button
-                onClick={() => setShowFeedback(!showFeedback)}
-                className="p-1 hover:bg-gray-700 rounded transition-colors"
+                onClick={handleCopy}
+                className="p-1.5 rounded hover:bg-white/10 transition-colors"
+                title="Copy message"
               >
-                <ThumbsUp className="w-4 h-4 text-gray-500 hover:text-green-400" />
+                {copied ? (
+                  <Check className="w-3.5 h-3.5 text-green-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" style={{ color: 'var(--muted)' }} />
+                )}
               </button>
-              <button
-                onClick={onRetry}
-                className="px-2 py-1 text-xs hover:bg-gray-700 rounded transition-colors"
-              >
-                Retry
-              </button>
+              {onRetry && !isUser && (
+                <button
+                  onClick={onRetry}
+                  className="p-1.5 rounded hover:bg-white/10 transition-colors"
+                  title="Regenerate response"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" style={{ color: 'var(--muted)' }} />
+                </button>
+              )}
             </div>
           )}
+
+          {/* Timestamp */}
+          <div
+            className={cn(
+              "text-xs mt-1 px-1",
+              isUser ? "text-right" : "text-left"
+            )}
+            style={{ color: 'var(--muted-foreground)' }}
+          >
+            {formatTime(message.created_at)}
+          </div>
         </div>
       </div>
     </div>
   )
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if content changes or streaming state changes
+  if (prevProps.message.message_id !== nextProps.message.message_id) return false
+  if (prevProps.isStreaming !== nextProps.isStreaming) return true
+  if (prevProps.message.content !== nextProps.message.content) return true
+  return false
+})
 
 export default MessageBubble

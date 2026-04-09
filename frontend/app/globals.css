@@ -1,50 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --radius: 0.5rem;
+    /* Premium Dark Theme */
+    --background: #020617;
+    --background-alt: #0f172a;
+    --card: #111827;
+    --card-hover: #1f2937;
+    --border: #1e293b;
+    --foreground: #f8fafc;
+    --muted: #94a3b8;
+    --muted-foreground: #64748b;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --accent: #8b5cf6;
+    --accent-foreground: #ffffff;
+    --input: #1e293b;
+    --ring: #3b82f6;
+
+    --radius: 0.75rem;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  * {
+    @apply border-border;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  ::selection {
+    background: var(--primary);
+    color: white;
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -52,79 +63,324 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
+  background: var(--border);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-
-/* Hide scrollbar for chat messages area */
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+  background: var(--muted);
 }
 
 /* Animations */
-@keyframes pulse-glow {
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse-dot {
   0%, 100% {
+    transform: scale(1);
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
+    transform: scale(1.2);
+    opacity: 0.7;
   }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
-/* Prose overrides for markdown */
-.prose pre {
-  background: #1f2937 !important;
-  padding: 0 !important;
-  margin: 0 !important;
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-.prose code {
-  background: #1f2937 !important;
-  padding: 0.2em 0.4em !important;
-  border-radius: 0.25rem !important;
-  font-size: 0.875em !important;
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-.prose pre code {
-  background: transparent !important;
-  padding: 0 !important;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.prose p {
-  margin-top: 0.75em;
-  margin-bottom: 0.75em;
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
-.prose ul, .prose ol {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out forwards;
 }
 
-.prose li {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
 }
 
-/* Focus styles */
-:focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
-/* Selection */
-::selection {
-  background: hsl(var(--primary) / 0.3);
+.animate-typing-dot {
+  animation: typing-dot 1.4s ease-in-out infinite;
+}
+
+.animate-cursor {
+  animation: cursor-blink 0.8s ease-in-out infinite;
+  background-color: var(--primary);
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, var(--card) 0%, var(--card-hover) 50%, var(--card) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 1.5s linear infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+}
+
+/* Premium card */
+.premium-card {
+  @apply rounded-2xl border shadow-lg;
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Message bubbles */
+.message-user {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  @apply text-white rounded-2xl rounded-br-md px-4 py-3 shadow-lg;
+  color: white !important;
+}
+
+.message-assistant {
+  background: var(--card);
+  @apply border rounded-2xl rounded-bl-md px-4 py-3 shadow-md;
+  color: var(--foreground) !important;
+}
+
+/* Input styles */
+.chat-input {
+  @apply w-full resize-none bg-transparent text-foreground placeholder:text-muted-foreground;
+  @apply focus:outline-none;
+}
+
+.chat-input:focus {
+  box-shadow: none;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 rounded-xl font-medium text-white transition-all duration-200;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  @apply hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-ghost {
+  @apply px-4 py-2 rounded-xl font-medium transition-all duration-200;
+  @apply hover:bg-white/5 active:scale-[0.98];
+}
+
+/* Sidebar styles */
+.sidebar-item {
+  @apply flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200;
+  @apply hover:bg-white/5;
+}
+
+.sidebar-item-active {
+  @apply bg-white/10 border;
+}
+
+/* Toast notification */
+.toast {
+  @apply fixed bottom-4 right-4 px-6 py-4 rounded-xl shadow-2xl z-50;
+  @apply animate-fade-in-up;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+/* Typing indicator */
+.typing-indicator {
+  @apply flex items-center gap-1.5 p-3;
+}
+
+.typing-dot {
+  @apply w-2 h-2 rounded-full;
+  background: var(--muted);
+  animation: typing-dot 1.4s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Skeleton loader */
+.skeleton {
+  @apply rounded-xl;
+  background: linear-gradient(90deg, var(--card) 0%, var(--card-hover) 50%, var(--card) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Suggestion chips */
+.suggestion-chip {
+  @apply flex items-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200;
+  @apply border text-sm font-medium;
+  background: var(--card);
+  border-color: var(--border);
+  @apply hover:border-primary/50 hover:bg-white/5;
+}
+
+/* Status dot */
+.status-dot {
+  @apply w-2.5 h-2.5 rounded-full;
+}
+
+.status-dot.online {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.status-dot.connecting {
+  background: #eab308;
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+
+.status-dot.offline {
+  background: #6b7280;
+}
+
+/* Connection indicator */
+.connection-indicator {
+  @apply flex items-center gap-2 text-sm;
+}
+
+.connection-indicator.online {
+  @apply text-green-400;
+}
+
+.connection-indicator.connecting {
+  @apply text-yellow-400;
+}
+
+.connection-indicator.offline {
+  @apply text-gray-500;
+}
+
+/* Empty state */
+.empty-state {
+  @apply flex flex-col items-center justify-center text-center py-16;
+}
+
+.empty-state-icon {
+  @apply w-20 h-20 rounded-2xl flex items-center justify-center mb-6;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.25);
+}
+
+/* Avatar */
+.avatar {
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold;
+}
+
+.avatar-user {
+  @apply bg-gradient-to-br from-blue-500 to-purple-600 text-white;
+}
+
+.avatar-ai {
+  @apply bg-gradient-to-br from-violet-500 to-purple-600 text-white;
+}
+
+/* Code block */
+.code-block {
+  @apply rounded-lg overflow-hidden my-3;
+  background: #0d1117;
+  border: 1px solid var(--border);
+}
+
+.code-block-header {
+  @apply flex items-center justify-between px-4 py-2 text-xs text-gray-400;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.code-block-copy {
+  @apply px-2 py-1 rounded hover:bg-white/10 transition-colors;
+}
+
+/* Markdown prose */
+.prose-dark {
+  @apply text-sm leading-relaxed;
+  color: var(--foreground);
+}
+
+.prose-dark p {
+  @apply my-2;
+}
+
+.prose-dark ul, .prose-dark ol {
+  @apply my-2 ml-4;
+}
+
+.prose-dark li {
+  @apply my-1;
+}
+
+.prose-dark code {
+  @apply bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono;
+}
+
+.prose-dark pre {
+  @apply bg-black/50 rounded-lg p-3 my-3 overflow-x-auto;
+}
+
+.prose-dark a {
+  @apply text-primary hover:underline;
+}
+
+.prose-dark blockquote {
+  @apply border-l-2 border-primary/50 pl-4 my-3 text-muted-foreground;
 }

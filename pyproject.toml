@@ -3,7 +3,6 @@ name = "conversation-ai-platform"
 version = "1.0.0"
 description = "NelloreRuchullu - Production-ready conversational AI platform with memory, vector search, and real-time streaming"
 authors = ["Development Team"]
-readme = "README.md"
 packages = [{include = "app"}]
 
 [tool.poetry.dependencies]

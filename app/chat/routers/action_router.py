@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from app.db.session import get_db
-from app.models import ConversationAction, ActionStatus
+from app.models import ConversationAction, ConversationSession, ActionStatus
 from app.schemas import ActionResponse, ActionResultResponse, ActionListResponse
 from app.api.v1.dependencies import get_current_user
 
@@ -23,6 +23,26 @@ async def list_session_actions(
     current_user: dict = Depends(get_current_user)
 ):
     """List actions for a session."""
+    # Verify user has access to this session
+    session_result = await db.execute(
+        select(ConversationSession).where(
+            ConversationSession.session_id == session_id
+        )
+    )
+    session = session_result.scalar_one_or_none()
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+
+    if session.user_id != current_user.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
+        )
+
     query = select(ConversationAction).where(
         ConversationAction.session_id == session_id
     )
@@ -72,6 +92,20 @@ async def get_action(
             detail="Action not found"
         )
 
+    # Verify user has access to this action's session
+    session_result = await db.execute(
+        select(ConversationSession).where(
+            ConversationSession.session_id == action.session_id
+        )
+    )
+    session = session_result.scalar_one_or_none()
+
+    if session and session.user_id != current_user.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
+        )
+
     return action
 
 
@@ -93,6 +127,20 @@ async def get_action_result(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Action not found"
+        )
+
+    # Verify user has access to this action's session
+    session_result = await db.execute(
+        select(ConversationSession).where(
+            ConversationSession.session_id == action.session_id
+        )
+    )
+    session = session_result.scalar_one_or_none()
+
+    if session and session.user_id != current_user.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
         )
 
     if action.status not in [ActionStatus.COMPLETED, ActionStatus.FAILED]:

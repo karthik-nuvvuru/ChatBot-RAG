@@ -1,13 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { ChatWindow } from '@/components/chat/ChatWindow'
 import { useSession, useCreateSession } from '@/lib/hooks/useSessions'
 import { useFlatMessages } from '@/lib/hooks/useMessages'
 import { Loader2 } from 'lucide-react'
+import { getStoredToken, getStoredUserId } from '@/lib/hooks/useAuth'
 import type { Message } from '@/types/api'
+
+// Force dynamic rendering - this page depends on auth tokens and WebSocket connections
+export const dynamic = 'force-dynamic'
 
 export default function ChatPage() {
   const params = useParams()
@@ -16,21 +20,39 @@ export default function ChatPage() {
 
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(sessionId)
   const [localMessages, setLocalMessages] = useState<Message[]>([])
+  const [isAuthChecked, setIsAuthChecked] = useState(false)
+  const initRef = useRef(false)
 
   const createSession = useCreateSession()
+  const currentUserId = getStoredUserId()
+
+  // Check auth on mount
+  useEffect(() => {
+    const token = getStoredToken()
+    if (!token) {
+      router.push('/login')
+      return
+    }
+    setIsAuthChecked(true)
+  }, [router])
 
   // Create a new session if we're on /chat/new
   useEffect(() => {
+    if (!isAuthChecked) return
+    if (initRef.current) return
+    initRef.current = true
+
     const initSession = async () => {
       if (sessionId === 'new') {
         try {
           const newSession = await createSession.mutateAsync({
-            user_id: 'default-user', // In real app, get from auth
+            user_id: currentUserId,
           })
           setCurrentSessionId(newSession.session_id)
           router.replace(`/chat/${newSession.session_id}`)
         } catch (error) {
           console.error('Failed to create session:', error)
+          initRef.current = false // Reset for retry
           router.push('/')
         }
       } else {
@@ -39,7 +61,7 @@ export default function ChatPage() {
     }
 
     initSession()
-  }, [sessionId, createSession, router])
+  }, [sessionId, createSession, router, isAuthChecked, currentUserId])
 
   // Fetch session data
   const { data: session, isLoading: isLoadingSession } = useSession(currentSessionId || '')

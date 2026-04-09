@@ -50,15 +50,15 @@ async def create_session(
 
 @router.get("", response_model=SessionListResponse)
 async def list_sessions(
-    user_id: Optional[str] = Query(None),
     status_filter: Optional[str] = Query(None, alias="status"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     manager: SessionManager = Depends(get_session_manager),
     current_user: dict = Depends(get_current_user)
 ):
-    """List sessions with optional filtering."""
-    target_user = user_id or current_user.get("sub")
+    """List sessions for the current user."""
+    # Users can only list their own sessions
+    target_user = current_user.get("sub")
 
     sessions, total = await manager.get_user_sessions(
         user_id=target_user,

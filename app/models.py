@@ -74,14 +74,14 @@ class ConversationSession(Base):
         String(255), ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=True
     )
     accelerator_type: Mapped[str] = mapped_column(
-        Enum(AcceleratorType), default=AcceleratorType.BASIC
+        String(50), default="basic"
     )
     conversation_metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_active_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-    status: Mapped[str] = mapped_column(Enum(SessionStatus), default=SessionStatus.ACTIVE)
+    status: Mapped[str] = mapped_column(String(50), default="active")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -116,7 +116,7 @@ class ConversationMessage(Base):
         UUID(as_uuid=True), ForeignKey("conversation_sessions.session_id", ondelete="CASCADE"),
         nullable=False
     )
-    role: Mapped[str] = mapped_column(Enum(MessageRole), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     message_metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
     parent_message_id: Mapped[Optional[uuid.UUID]] = mapped_column(
@@ -154,14 +154,14 @@ class ConversationAction(Base):
         UUID(as_uuid=True), ForeignKey("conversation_messages.message_id", ondelete="SET NULL"),
         nullable=True
     )
-    action_type: Mapped[str] = mapped_column(Enum(ActionType), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(50), nullable=False)
     action_metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
     job_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     logging_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     workflow_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    status: Mapped[str] = mapped_column(Enum(ActionStatus), default=ActionStatus.PENDING)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
     result: Mapped[dict] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -184,7 +184,7 @@ class ConversationMemory(Base):
         UUID(as_uuid=True), ForeignKey("conversation_sessions.session_id", ondelete="CASCADE"),
         nullable=False
     )
-    memory_type: Mapped[str] = mapped_column(Enum(MemoryType), nullable=False)
+    memory_type: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     embedding: Mapped[Optional[List[float]]] = mapped_column(JSON, nullable=True)
     memory_metadata: Mapped[dict] = mapped_column(JSONB, default=dict)

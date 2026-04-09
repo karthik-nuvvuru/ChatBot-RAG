@@ -7,8 +7,9 @@ from typing import Optional, List, Tuple
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import ConversationSession, SessionStatus, AcceleratorType
+from app.models import ConversationSession
 from app.schemas import SessionCreate, SessionUpdate
+from app.models import SessionStatus
 from app.chat.redis_cache import RedisCache
 from app.core.config import settings
 
@@ -35,7 +36,7 @@ class SessionManager:
             ValueError: If accelerator_type is invalid
         """
         try:
-            accelerator = AcceleratorType(session_data.accelerator_type.value)
+            accelerator = session_data.accelerator_type.value
         except ValueError:
             raise ValueError(f"Invalid accelerator_type: {session_data.accelerator_type}")
 
@@ -48,7 +49,7 @@ class SessionManager:
             conversation_metadata=session_data.conversation_metadata or {},
             started_at=datetime.utcnow(),
             last_active_at=datetime.utcnow(),
-            status=SessionStatus.ACTIVE,
+            status="active",
         )
 
         self.db.add(session)

@@ -226,6 +226,22 @@ class MessageService:
         )
         return result.scalar() or 0
 
+    async def get_message_by_id(self, message_id: uuid.UUID) -> Optional[ConversationMessage]:
+        """Get a message by its ID.
+
+        Args:
+            message_id: Message UUID
+
+        Returns:
+            ConversationMessage if found, None otherwise
+        """
+        result = await self.db.execute(
+            select(ConversationMessage).where(
+                ConversationMessage.message_id == message_id
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def delete_message(self, message_id: uuid.UUID) -> bool:
         """Delete a message.
 

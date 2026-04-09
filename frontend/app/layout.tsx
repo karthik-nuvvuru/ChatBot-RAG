@@ -6,8 +6,8 @@ import { Providers } from '@/components/Providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'NelloreRuchullu - Conversation AI Platform',
-  description: 'Production-ready conversational AI platform with memory, vector search, and real-time streaming',
+  title: 'RAG Chatbot - Conversational AI Platform',
+  description: 'Production-ready RAG chatbot with memory, vector search, and real-time streaming',
 }
 
 export default function RootLayout({

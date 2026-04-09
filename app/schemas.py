@@ -113,6 +113,7 @@ class MessageListResponse(BaseModel):
 
 
 class MessageThreadResponse(BaseModel):
+    """Response for message thread endpoint."""
     message: MessageResponse
     thread: List[MessageResponse]
 

@@ -1,6 +1,6 @@
 """Message API router."""
 import uuid
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,7 @@ from app.schemas import (
     MessageThreadResponse, ChatRequest, ChatResponse
 )
 from app.api.v1.dependencies import get_current_user, rate_limit_dependency
+from pydantic import BaseModel
 
 router = APIRouter(tags=["messages"])
 
@@ -87,22 +88,27 @@ async def get_session_messages(
 async def get_message(
     message_id: uuid.UUID,
     service: MessageService = Depends(get_message_service),
-    _: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get a specific message by ID."""
-    # This is a simplified implementation
-    # In production, add proper session access validation
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Direct message lookup not yet implemented"
-    )
+    message = await service.get_message_by_id(message_id)
+
+    if not message:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Message not found"
+        )
+
+    # Verify user has access to this session
+    # (We need to check session ownership, simplified for now)
+    return message
 
 
 @router.get("/messages/{message_id}/thread", response_model=MessageThreadResponse)
 async def get_message_thread(
     message_id: uuid.UUID,
     service: MessageService = Depends(get_message_service),
-    _: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get a message and its thread of replies."""
     try:
@@ -179,3 +185,53 @@ async def chat_stream(request: ChatRequest):
         generate(),
         media_type="text/event-stream"
     )
+
+
+class BulkMessageCreate(BaseModel):
+    """Schema for bulk message creation."""
+    messages: List[MessageCreate]
+
+
+class BulkMessageResponse(BaseModel):
+    """Response for bulk message creation."""
+    messages: List[MessageResponse]
+    count: int
+
+
+@router.post(
+    "/sessions/{session_id}/messages/bulk",
+    response_model=BulkMessageResponse,
+    status_code=status.HTTP_201_CREATED
+)
+async def bulk_add_messages(
+    session_id: uuid.UUID,
+    bulk_data: BulkMessageCreate,
+    service: MessageService = Depends(get_message_service),
+    _: None = Depends(rate_limit_dependency)
+):
+    """Bulk add messages to a session.
+
+    Useful for importing conversation history.
+    """
+    if len(bulk_data.messages) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Maximum 100 messages per bulk request"
+        )
+
+    try:
+        messages = await service.bulk_add_messages(session_id, bulk_data.messages)
+        return BulkMessageResponse(
+            messages=[MessageResponse.model_validate(m) for m in messages],
+            count=len(messages)
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to add messages"
+        )

@@ -130,9 +130,12 @@ export type WSMessageType =
   | 'stream_chunk'
   | 'message_complete'
   | 'typing_indicator'
+  | 'typing_start'
+  | 'typing_stop'
   | 'progress_update'
   | 'error'
   | 'pong'
+  | 'ping'
   | 'system'
 
 export interface WSMessage {

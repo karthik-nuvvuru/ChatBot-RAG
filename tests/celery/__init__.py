@@ -1,0 +1,1 @@
+"""Celery tests package initialization."""

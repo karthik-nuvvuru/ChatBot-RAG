@@ -1,38 +1,52 @@
-# API Reference
+# API Reference - NelloreRuchullu Conversation AI Platform
 
-Complete API documentation for the Conversation AI Platform.
+## Overview
 
-## Base URL
-
-```
-http://localhost:8000
-```
+Base URL: `http://localhost:8000` (development)
+API Version: v1
+API Prefix: `/api/v1`
 
 ## Authentication
 
-All API endpoints (except `/health`, `/`, and `/metrics`) require JWT Bearer authentication.
+All authenticated endpoints require a JWT Bearer token in the `Authorization` header:
 
 ```
-Authorization: Bearer <jwt_token>
+Authorization: Bearer <token>
 ```
 
-### Obtaining a Token
+Tokens are obtained via the `/auth/token` endpoint. The token contains:
+- `sub`: user_id
+- `email`: user email (optional)
+- `roles`: array of roles (e.g., `["user"]`)
+- `exp`: expiration timestamp
 
-Tokens are obtained via OAuth2 Password flow. The `tokenUrl` is:
+### Getting a Token
 
-```
+**Request:**
+```http
 POST /api/v1/auth/token
+Content-Type: application/json
+
+{
+  "user_id": "karthik123",
+  "email": "karthik123@example.com"
+}
 ```
 
-## Table of Contents
+**Response (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJrYXJ0aGlrMTIzIiwiZW1haWwiOiJrYXJ0aGlrMTIzQGV4YW1wbGUuY29tIiwicm9sZXMiOlsidXNlciJdLCJleHAiOjE3NzU3NjAxNTcsImlhdCI6MTc3NTc1ODM1N30.wR1Axu7nvNgniUBGpJoZLkGGPwruizRY7ozwHzON1DY",
+  "token_type": "bearer"
+}
+```
 
-1. [Sessions API](#sessions-api)
-2. [Messages API](#messages-api)
-3. [Chat API](#chat-api)
-4. [Actions API](#actions-api)
-5. [System Endpoints](#system-endpoints)
-6. [WebSocket](#websocket)
-7. [Celery Scheduled Tasks](#celery-scheduled-tasks)
+**Error (400 - Missing user_id):**
+```json
+{
+  "detail": "user_id is required"
+}
+```
 
 ---
 
@@ -40,175 +54,151 @@ POST /api/v1/auth/token
 
 ### Create Session
 
-Create a new conversation session.
+Creates a new conversation session.
 
+**Request:**
 ```http
 POST /api/v1/sessions
-```
+Authorization: Bearer <token>
+Content-Type: application/json
 
-**Request Body:**
-
-```json
 {
-  "user_id": "string (required)",
-  "engagement_id": "string (optional)",
-  "project_id": "string (optional)",
-  "accelerator_type": "basic | advanced | enterprise (default: basic)",
-  "conversation_metadata": {
-    "key": "value"
-  }
+  "user_id": "karthik123"
 }
 ```
 
-**Response (201):**
-
+**Response (201 Created):**
 ```json
 {
-  "session_id": "uuid",
-  "user_id": "string",
-  "engagement_id": "string | null",
-  "project_id": "string | null",
-  "accelerator_type": "string",
+  "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+  "user_id": "karthik123",
+  "engagement_id": null,
+  "project_id": null,
+  "accelerator_type": "basic",
   "conversation_metadata": {},
-  "started_at": "datetime",
-  "last_active_at": "datetime",
-  "status": "active | paused | completed | archived",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "started_at": "2026-04-09T18:30:00.123456",
+  "last_active_at": "2026-04-09T18:30:00.123456",
+  "status": "active",
+  "created_at": "2026-04-09T18:30:00.123456",
+  "updated_at": "2026-04-09T18:30:00.123456"
 }
 ```
+
+**UI Trigger:** User clicks "New Chat" button → `useCreateSession().mutateAsync()` called → navigates to `/chat/{session_id}`
 
 ---
 
 ### List Sessions
 
-List sessions with optional filtering.
+Lists all sessions for the authenticated user.
 
+**Request:**
 ```http
-GET /api/v1/sessions
+GET /api/v1/sessions?limit=20&offset=0
+Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `status` | string | null | Filter by status (active, paused, completed, archived) |
+| `limit` | integer | 20 | Number of results (1-100) |
+| `offset` | integer | 0 | Pagination offset |
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `user_id` | string | No | - | Filter by user ID |
-| `status` | string | No | - | Filter by status (active/paused/completed/archived) |
-| `limit` | integer | No | 20 | Max results (1-100) |
-| `offset` | integer | No | 0 | Pagination offset |
-
-**Response (200):**
-
+**Response (200 OK):**
 ```json
 {
   "sessions": [
     {
-      "session_id": "uuid",
-      "user_id": "string",
-      "engagement_id": "string | null",
-      "project_id": "string | null",
-      "accelerator_type": "string",
+      "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+      "user_id": "karthik123",
+      "engagement_id": null,
+      "project_id": null,
+      "accelerator_type": "basic",
       "conversation_metadata": {},
-      "started_at": "datetime",
-      "last_active_at": "datetime",
-      "status": "string",
-      "created_at": "datetime",
-      "updated_at": "datetime"
+      "started_at": "2026-04-09T18:30:00.123456",
+      "last_active_at": "2026-04-09T18:30:00.123456",
+      "status": "active",
+      "created_at": "2026-04-09T18:30:00.123456",
+      "updated_at": "2026-04-09T18:30:00.123456"
     }
   ],
-  "total": 100,
-  "has_more": true
+  "total": 1,
+  "has_more": false
 }
 ```
 
----
-
-### Get Active Session Count
-
-Get count of active sessions for current user.
-
-```http
-GET /api/v1/sessions/active/count
-```
-
-**Response (200):**
-
-```json
-{
-  "count": 5
-}
-```
+**UI Trigger:** Sidebar component loads → `useSessions()` hook fetches on mount
 
 ---
 
 ### Get Session
 
-Get a specific session by ID.
+Gets a specific session by ID.
 
+**Request:**
 ```http
-GET /api/v1/sessions/{session_id}
+GET /api/v1/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea
+Authorization: Bearer <token>
 ```
 
-**Path Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `session_id` | uuid | Yes | Session UUID |
-
-**Response (200):**
-
+**Response (200 OK):**
 ```json
 {
-  "session_id": "uuid",
-  "user_id": "string",
-  "engagement_id": "string | null",
-  "project_id": "string | null",
-  "accelerator_type": "string",
+  "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+  "user_id": "karthik123",
+  "engagement_id": null,
+  "project_id": null,
+  "accelerator_type": "basic",
   "conversation_metadata": {},
-  "started_at": "datetime",
-  "last_active_at": "datetime",
-  "status": "string",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "started_at": "2026-04-09T18:30:00.123456",
+  "last_active_at": "2026-04-09T18:30:00.123456",
+  "status": "active",
+  "created_at": "2026-04-09T18:30:00.123456",
+  "updated_at": "2026-04-09T18:30:00.123456"
 }
 ```
+
+**Error (404 Not Found):**
+```json
+{
+  "detail": "Session not found"
+}
+```
+
+**Error (403 Forbidden):**
+```json
+{
+  "detail": "Access denied"
+}
+```
+
+**UI Trigger:** Chat page loads with sessionId in URL → `useSession(sessionId)` fetches session data
 
 ---
 
 ### Update Session
 
-Update session metadata or status.
+Updates session status or metadata.
 
+**Request:**
 ```http
-PATCH /api/v1/sessions/{session_id}
-```
+PATCH /api/v1/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea
+Authorization: Bearer <token>
+Content-Type: application/json
 
-**Request Body:**
-
-```json
 {
-  "status": "active | paused | completed | archived (optional)",
-  "conversation_metadata": {
-    "key": "value"
-  }
+  "status": "paused"
 }
 ```
 
-**Response (200):**
-
+**Response (200 OK):**
 ```json
 {
-  "session_id": "uuid",
-  "user_id": "string",
-  "engagement_id": "string | null",
-  "project_id": "string | null",
-  "accelerator_type": "string",
-  "conversation_metadata": {},
-  "started_at": "datetime",
-  "last_active_at": "datetime",
-  "status": "string",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+  "user_id": "karthik123",
+  "status": "paused",
+  ...
 }
 ```
 
@@ -216,47 +206,59 @@ PATCH /api/v1/sessions/{session_id}
 
 ### Delete Session (Archive)
 
-Archive a session (soft delete).
+Archives a session (soft delete).
 
+**Request:**
 ```http
-DELETE /api/v1/sessions/{session_id}
+DELETE /api/v1/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea
+Authorization: Bearer <token>
 ```
 
-**Response (204):** No content
+**Response (204 No Content)**
+
+**UI Trigger:** User clicks delete on session in sidebar → `useDeleteSession().mutateAsync()` called
 
 ---
 
 ### Fork Session
 
-Fork an existing session to create a new one.
+Creates a copy of an existing session.
 
+**Request:**
 ```http
-POST /api/v1/sessions/{session_id}/fork
-```
+POST /api/v1/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea/fork
+Authorization: Bearer <token>
+Content-Type: application/json
 
-**Request Body:**
-
-```json
 {
-  "new_user_id": "string (optional)"
+  "new_user_id": "another_user"
 }
 ```
 
-**Response (201):**
-
+**Response (201 Created):**
 ```json
 {
-  "session_id": "uuid",
-  "user_id": "string",
-  "engagement_id": "string | null",
-  "project_id": "string | null",
-  "accelerator_type": "string",
-  "conversation_metadata": {},
-  "started_at": "datetime",
-  "last_active_at": "datetime",
-  "status": "string",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "session_id": "new-session-uuid",
+  "user_id": "another_user",
+  "status": "active",
+  ...
+}
+```
+
+---
+
+### Get Active Session Count
+
+**Request:**
+```http
+GET /api/v1/sessions/active/count
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "active_sessions": 5
 }
 ```
 
@@ -266,99 +268,131 @@ POST /api/v1/sessions/{session_id}/fork
 
 ### Add Message
 
-Add a new message to a session.
+Adds a new message to a session.
 
+**Request:**
 ```http
-POST /api/v1/sessions/{session_id}/messages
-```
+POST /api/v1/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea/messages
+Authorization: Bearer <token>
+Content-Type: application/json
 
-**Request Body:**
-
-```json
 {
-  "role": "user | assistant | system (required)",
-  "content": "string (required, max 10000 chars)",
-  "message_metadata": {
-    "key": "value"
-  },
-  "parent_message_id": "uuid (optional)"
+  "role": "user",
+  "content": "Hello, how are you?"
 }
 ```
 
-**Response (201):**
+**Request Body Schema:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `role` | string | yes | One of: `user`, `assistant`, `system` |
+| `content` | string | yes | Message content (1-10000 chars) |
+| `parent_message_id` | UUID | no | Parent message for threading |
+| `message_metadata` | object | no | Additional metadata |
 
+**Response (201 Created):**
 ```json
 {
-  "message_id": "uuid",
-  "session_id": "uuid",
-  "role": "string",
-  "content": "string",
+  "message_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+  "role": "user",
+  "content": "Hello, how are you?",
   "message_metadata": {},
-  "parent_message_id": "uuid | null",
-  "created_at": "datetime"
+  "parent_message_id": null,
+  "created_at": "2026-04-09T18:31:00.123456"
 }
 ```
+
+**Error (404 - Session not found):**
+```json
+{
+  "detail": "Session f14dcb09-7ba0-4850-92af-f94eb6b241ea not found"
+}
+```
+
+**Error (400 - Session not active):**
+```json
+{
+  "detail": "Session f14dcb09-7ba0-4850-92af-f94eb6b241ea is not active"
+}
+```
+
+**UI Trigger:** This endpoint is called internally by the orchestrator when processing chat messages, not directly by UI
 
 ---
 
 ### Get Session Messages
 
-Get messages for a session with cursor pagination.
+Gets paginated messages for a session.
 
+**Request:**
 ```http
-GET /api/v1/sessions/{session_id}/messages
+GET /api/v1/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea/messages?limit=20&cursor=abc123
+Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | integer | 20 | Results per page (1-100) |
+| `cursor` | string | null | Pagination cursor from previous response |
+| `role` | string | null | Filter by role (user, assistant, system) |
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `limit` | integer | No | 20 | Max results (1-100) |
-| `cursor` | string | No | - | Pagination cursor |
-| `role` | string | No | - | Filter by role |
-
-**Response (200):**
-
+**Response (200 OK):**
 ```json
 {
   "messages": [
     {
-      "message_id": "uuid",
-      "session_id": "uuid",
-      "role": "string",
-      "content": "string",
+      "message_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+      "role": "user",
+      "content": "Hello, how are you?",
       "message_metadata": {},
-      "parent_message_id": "uuid | null",
-      "created_at": "datetime"
+      "parent_message_id": null,
+      "created_at": "2026-04-09T18:31:00.123456"
+    },
+    {
+      "message_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+      "role": "assistant",
+      "content": "I'm doing well! How can I help you today?",
+      "message_metadata": {},
+      "parent_message_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "created_at": "2026-04-09T18:31:01.234567"
     }
   ],
-  "total": 100,
-  "has_more": true,
-  "next_cursor": "string | null"
+  "total": 2,
+  "has_more": false,
+  "next_cursor": null
 }
 ```
 
+**UI Trigger:** Chat page loads → `useMessages(sessionId)` fetches message history via infinite query
+
 ---
 
-### Get Message
+### Search Messages
 
-Get a specific message by ID.
+Full-text search within a session's messages.
 
+**Request:**
 ```http
-GET /api/v1/messages/{message_id}
+GET /api/v1/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea/messages/search?q=hello&limit=10
+Authorization: Bearer <token>
 ```
 
-**Response (200):**
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `q` | string | yes | Search query (min 1 char) |
+| `limit` | integer | 20 | Max results (1-100) |
 
+**Response (200 OK):**
 ```json
 {
-  "message_id": "uuid",
-  "session_id": "uuid",
-  "role": "string",
-  "content": "string",
-  "message_metadata": {},
-  "parent_message_id": "uuid | null",
-  "created_at": "datetime"
+  "messages": [...],
+  "query": "hello",
+  "count": 1
 }
 ```
 
@@ -366,72 +400,32 @@ GET /api/v1/messages/{message_id}
 
 ### Get Message Thread
 
-Get a message and its thread of replies.
+Gets a message and its reply chain.
 
+**Request:**
 ```http
-GET /api/v1/messages/{message_id}/thread
+GET /api/v1/messages/a1b2c3d4-e5f6-7890-abcd-ef1234567890/thread
+Authorization: Bearer <token>
 ```
 
-**Response (200):**
-
+**Response (200 OK):**
 ```json
 {
   "message": {
-    "message_id": "uuid",
-    "session_id": "uuid",
-    "role": "string",
-    "content": "string",
-    "message_metadata": {},
-    "parent_message_id": "uuid | null",
-    "created_at": "datetime"
+    "message_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+    "role": "user",
+    "content": "Hello",
+    ...
   },
   "thread": [
     {
-      "message_id": "uuid",
-      "session_id": "uuid",
-      "role": "string",
-      "content": "string",
-      "message_metadata": {},
-      "parent_message_id": "uuid | null",
-      "created_at": "datetime"
+      "message_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "role": "assistant",
+      "content": "Hi there!",
+      ...
     }
   ]
-}
-```
-
----
-
-### Search Messages
-
-Search messages within a session.
-
-```http
-GET /api/v1/sessions/{session_id}/messages/search?q=<query>&limit=20
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `q` | string | Yes | - | Search query |
-| `limit` | integer | No | 20 | Max results (1-100) |
-
-**Response (200):**
-
-```json
-{
-  "results": [
-    {
-      "message_id": "uuid",
-      "session_id": "uuid",
-      "role": "string",
-      "content": "string",
-      "message_metadata": {},
-      "parent_message_id": "uuid | null",
-      "created_at": "datetime"
-    }
-  ],
-  "total": 5
 }
 ```
 
@@ -439,265 +433,124 @@ GET /api/v1/sessions/{session_id}/messages/search?q=<query>&limit=20
 
 ## Chat API
 
-### Send Chat Message (Non-Streaming)
+### Send Message (Non-Streaming)
 
-Send a message and get AI response.
+Sends a message and returns a complete AI response.
 
+**Request:**
 ```http
 POST /api/v1/chat
-```
+Authorization: Bearer <token>
+Content-Type: application/json
 
-**Request Body:**
-
-```json
 {
-  "session_id": "uuid (required)",
-  "message": "string (required, max 10000 chars)",
+  "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+  "message": "Hello, how are you?",
   "stream": false,
   "temperature": 0.7,
   "max_tokens": 4096
 }
 ```
 
-**Response (200):**
+**Request Body Schema:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `session_id` | UUID | yes | Target session |
+| `message` | string | yes | User message (1-10000 chars) |
+| `stream` | boolean | no | Ignored for this endpoint (always false) |
+| `temperature` | float | no | LLM temperature (0.0-2.0, default 0.7) |
+| `max_tokens` | integer | no | Max response tokens (1-32768, default 4096) |
 
+**Response (200 OK):**
 ```json
 {
-  "session_id": "uuid",
-  "message_id": "uuid",
-  "content": "string",
-  "finish_reason": "string",
+  "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+  "message_id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+  "content": "I'm doing well! How can I help you today?",
+  "finish_reason": "stop",
   "usage": {
-    "prompt_tokens": 100,
+    "prompt_tokens": 150,
     "completion_tokens": 50,
-    "total_tokens": 150
+    "total_tokens": 200
   }
 }
 ```
 
+**UI Trigger:** Not used by frontend - UI uses WebSocket for streaming responses
+
 ---
 
-### Send Chat Message (Streaming)
+### Send Message (Streaming)
 
-Send a message and stream AI response.
+Streams AI response chunks using Server-Sent Events (SSE).
 
+**Request:**
 ```http
 POST /api/v1/chat/stream
-```
+Authorization: Bearer <token>
+Content-Type: application/json
 
-**Request Body:**
-
-```json
 {
-  "session_id": "uuid (required)",
-  "message": "string (required, max 10000 chars)",
-  "stream": true,
-  "temperature": 0.7,
-  "max_tokens": 4096
+  "session_id": "f14dcb09-7ba0-4850-92af-f94eb6b241ea",
+  "message": "Hello, how are you?",
+  "stream": true
 }
 ```
 
-**Response (200):** Server-Sent Events (SSE) stream
+**Response (200 OK):**
+```
+Content-Type: text/event-stream
 
+data: {"chunk": "I"}
+
+data: {"chunk": "'m"}
+
+data: {"chunk": " doing"}
+
+data: {"chunk": " well"}
+
+...
 ```
-data: {"type": "chunk", "content": "Hello"}
-data: {"type": "chunk", "content": " world"}
-data: {"type": "done", "message_id": "uuid", "content": "Hello world"}
-```
+
+**UI Trigger:** Not used by frontend - UI uses WebSocket instead
 
 ---
 
-## Actions API
+## WebSocket API
 
-Actions represent asynchronous operations like code execution, web searches, and API calls.
+### Connect to Chat Session
 
-### List Session Actions
+Real-time bidirectional communication for chat.
 
-List actions for a session.
-
-```http
-GET /api/v1/actions/sessions/{session_id}/actions
+**Connection URL:**
+```
+ws://localhost:8000/api/v1/chat/sessions/{session_id}/ws?token={jwt_token}
 ```
 
-**Query Parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `limit` | integer | No | 20 | Max results (1-100) |
-| `offset` | integer | No | 0 | Pagination offset |
-| `status` | string | No | - | Filter by status (pending/running/completed/failed) |
-
-**Response (200):**
-
-```json
-{
-  "actions": [
-    {
-      "action_id": "uuid",
-      "session_id": "uuid",
-      "message_id": "uuid | null",
-      "action_type": "string",
-      "action_metadata": {},
-      "job_id": "string | null",
-      "logging_id": "string | null",
-      "workflow_id": "string | null",
-      "started_at": "datetime | null",
-      "completed_at": "datetime | null",
-      "status": "pending | running | completed | failed",
-      "result": {},
-      "created_at": "datetime"
-    }
-  ],
-  "total": 10
-}
+**Example:**
 ```
+ws://localhost:8000/api/v1/chat/sessions/f14dcb09-7ba0-4850-92af-f94eb6b241ea/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**UI Trigger:** Chat page loads → `wsClient.connect()` called in `useChat` hook
 
 ---
-
-### Get Action
-
-Get a specific action by ID.
-
-```http
-GET /api/v1/actions/actions/{action_id}
-```
-
-**Response (200):**
-
-```json
-{
-  "action_id": "uuid",
-  "session_id": "uuid",
-  "message_id": "uuid | null",
-  "action_type": "string",
-  "action_metadata": {},
-  "job_id": "string | null",
-  "logging_id": "string | null",
-  "workflow_id": "string | null",
-  "started_at": "datetime | null",
-  "completed_at": "datetime | null",
-  "status": "pending | running | completed | failed",
-  "result": {},
-  "created_at": "datetime"
-}
-```
-
----
-
-### Get Action Result
-
-Get the result of an action.
-
-```http
-GET /api/v1/actions/actions/{action_id}/result
-```
-
-**Response (200):**
-
-```json
-{
-  "action_id": "uuid",
-  "status": "completed | failed",
-  "result": {
-    "output": "string",
-    "error": "string | null"
-  },
-  "completed_at": "datetime | null"
-}
-```
-
----
-
-## System Endpoints
-
-### Health Check
-
-```http
-GET /health
-```
-
-**Response (200):**
-
-```json
-{
-  "status": "healthy",
-  "version": "1.0.0",
-  "env": "dev | prod",
-  "llm_provider": "euri | azure",
-  "services": {
-    "database": "connected",
-    "redis": "connected"
-  }
-}
-```
-
----
-
-### Root
-
-```http
-GET /
-```
-
-**Response (200):**
-
-```json
-{
-  "name": "Conversation AI Platform",
-  "version": "1.0.0",
-  "docs": "/docs",
-  "health": "/health"
-}
-```
-
----
-
-### Prometheus Metrics
-
-```http
-GET /metrics
-```
-
-**Response (200):** Prometheus text format
-
----
-
-## WebSocket
-
-### Real-Time Chat WebSocket
-
-Connect to a WebSocket for real-time chat.
-
-**Endpoint:**
-
-```
-ws://localhost:8000/api/v1/chat/sessions/{session_id}/ws?token=<jwt_token>
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `token` | string | Yes | JWT authentication token |
-| `session_id` | path | Yes | Session UUID to connect to |
 
 ### WebSocket Message Types
 
-#### Client to Server
+#### Client → Server Messages
 
 **Send User Message:**
-
 ```json
 {
   "type": "user_message",
   "content": "Hello, how are you?",
   "stream": true,
-  "timestamp": "2024-01-15T10:30:00Z"
+  "timestamp": "2026-04-09T18:32:00.000000"
 }
 ```
 
 **Typing Start:**
-
 ```json
 {
   "type": "typing_start"
@@ -705,492 +558,365 @@ ws://localhost:8000/api/v1/chat/sessions/{session_id}/ws?token=<jwt_token>
 ```
 
 **Typing Stop:**
-
 ```json
 {
   "type": "typing_stop"
 }
 ```
 
-**Ping:**
-
+**Ping (Heartbeat):**
 ```json
 {
   "type": "ping"
 }
 ```
 
-#### Server to Client
+#### Server → Client Messages
 
-**Message Received Acknowledgment:**
-
+**Message Received (Ack):**
 ```json
 {
   "type": "message_received",
   "payload": {
-    "content": "Hello, how are..."
+    "content": "Hello, how are you?"
   },
-  "timestamp": "2024-01-15T10:30:00Z"
+  "timestamp": "2026-04-09T18:32:00.000000"
 }
 ```
 
 **Stream Chunk:**
-
 ```json
 {
   "type": "stream_chunk",
   "payload": {
-    "content": "I'm doing well"
+    "content": "I'm"
   },
   "done": false
 }
 ```
 
 **Message Complete:**
-
 ```json
 {
   "type": "message_complete",
   "payload": {
-    "message_id": "uuid",
-    "content": "I'm doing well, thank you!"
+    "message_id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "content": "I'm doing well! How can I help you today?"
   },
   "done": true
 }
 ```
 
 **Typing Indicator:**
-
 ```json
 {
   "type": "typing_indicator",
   "payload": {
-    "user_id": "user123",
+    "user_id": "karthik123",
     "is_typing": true
   }
 }
 ```
 
-**Progress Update:**
-
-```json
-{
-  "type": "progress_update",
-  "payload": {
-    "progress": 50.0,
-    "status": "processing",
-    "message": "Searching..."
-  }
-}
-```
-
 **Error:**
-
 ```json
 {
   "type": "error",
   "payload": {
-    "code": "PROCESSING_ERROR",
-    "message": "Failed to process message"
+    "code": "SESSION_NOT_FOUND",
+    "message": "Session does not exist or user lacks access",
+    "retry_after": 5
   }
 }
 ```
 
-**Pong:**
-
+**Pong (Heartbeat Response):**
 ```json
 {
   "type": "pong"
 }
 ```
 
-### WebSocket Close Codes
-
-| Code | Reason | Description |
-|------|--------|-------------|
-| 4001 | Unauthorized | Invalid or missing token |
-| 4002 | Connection failed | Could not establish connection |
-
 ---
 
-## Celery Scheduled Tasks
+### WebSocket Connection Flow
 
-The following tasks are scheduled via Celery Beat and executed by Celery Workers.
-
-### Daily Session Archival
-
-**Task:** `archive_inactive_sessions`
-**Schedule:** Daily at 2:00 AM UTC
-**Description:** Archives sessions that have been inactive for longer than `SESSION_INACTIVITY_THRESHOLD_DAYS` (default: 30 days).
-
-**Behavior:**
-1. Queries sessions with status `ACTIVE` and `last_active_at` older than threshold
-2. Updates status to `ARCHIVED` in batches
-3. Logs archive count
-
-**Returns:**
-```json
-{
-  "archived_count": 15
-}
+```
+1. Frontend: wsClient.connect({ sessionId, token })
+2. Backend: WebSocket handshake → validate token → accept()
+3. Backend: connection_manager.connect(websocket, session_id, user_id)
+4. Frontend: onStatusChange('connected')
+5. Frontend: wsClient.sendUserMessage("Hello")
+6. Backend: handle_message() → orchestrator.process_message()
+7. Backend: stream_callback(chunk) → send stream_chunk
+8. Frontend: onStreamChunk(chunk) → update streamingContent state
+9. Backend: completion → send message_complete
+10. Frontend: onMessageReceived(completeMessage) → add to messages list
+11. Frontend: setIsSending(false)
 ```
 
 ---
 
-### Weekly Attachment Cleanup
+## UI Interaction Flows
 
-**Task:** `cleanup_old_attachments`
-**Schedule:** Weekly on Sunday at 3:00 AM UTC
-**Description:** Deletes attachments older than `ATTACHMENT_CLEANUP_DAYS` retention period.
+### Flow 1: User Opens App
 
-**Behavior:**
-1. Scans local storage `/app/storage/attachments`
-2. Deletes files with modification time older than retention threshold
-3. Logs deleted count and bytes freed
+```
+1. User navigates to http://localhost:3000
+2. Home page checks: getStoredToken() exists?
+   - NO → redirect to /login
+   - YES → continue
+3. Home page renders with "New Chat" button
+```
 
-**Returns:**
-```json
-{
-  "deleted_count": 42,
-  "freed_bytes": 104857600
-}
+### Flow 2: User Logs In
+
+```
+1. User enters user_id (email optional)
+2. POST /api/v1/auth/token { user_id, email }
+3. Response: { access_token, token_type }
+4. Token stored in localStorage 'auth_token'
+5. Redirect to home page
+```
+
+### Flow 3: User Creates New Chat
+
+```
+1. User clicks "New Chat" button
+2. POST /api/v1/sessions { user_id }
+3. Response: { session_id: "uuid-...", ... }
+4. Navigate to /chat/{session_id}
+5. WebSocket connects to /api/v1/chat/sessions/{session_id}/ws?token=...
+6. Sidebar loads sessions: GET /api/v1/sessions
+7. Chat window shows empty state with suggestions
+```
+
+### Flow 4: User Sends Message
+
+```
+1. User types message in ChatInput
+2. User presses Enter or clicks Send
+3. handleSend() called with message text
+4. useChat.sendMessage() invoked
+5. if (!wsClient.isConnected()) → show error, don't send
+6. Create optimistic user message
+7. onMessageReceived(optimisticMessage) → UI shows message immediately
+8. wsClient.sendUserMessage(content) → WebSocket sends user_message
+9. Backend receives → orchestrator processes
+10. Backend streams chunks → stream_chunk events
+11. Frontend updates streamingContent state → UI shows streaming text
+12. Backend sends message_complete
+13. Frontend: onMessageReceived(completeMessage) → replace optimistic + add assistant
+14. Frontend: setIsSending(false)
+```
+
+### Flow 5: User Switches Chats
+
+```
+1. User clicks session in Sidebar
+2. handleSessionSelect(newSessionId) called
+3. setCurrentSessionId(newSessionId)
+4. ChatWindow receives new sessionId prop
+5. useEffect: WebSocket disconnects from old session
+6. useEffect: WebSocket connects to new session
+7. Messages fetched via useMessages(newSessionId)
+8. Chat window renders with loaded messages
+```
+
+### Flow 6: Page Reload with Active Session
+
+```
+1. Page loads /chat/{session_id}
+2. Auth check: token exists?
+3. Session ID validated (must be valid UUID)
+4. WebSocket connects with sessionId
+5. useSession(sessionId) fetches session
+6. useMessages(sessionId) fetches message history
+7. ChatWindow renders with messages
+8. WebSocket ready for sending/receiving
 ```
 
 ---
 
-### Abandoned Session Cleanup
+## Error Handling
 
-**Task:** `cleanup_abandoned_sessions`
-**Schedule:** Manual trigger
-**Description:** Removes sessions in `PAUSED` status for more than 30 days.
+### HTTP Status Codes
 
-**Behavior:**
-1. Queries sessions with status `PAUSED` and `last_active_at` older than 30 days
-2. Permanently deletes these sessions
+| Status | Meaning | Common Causes |
+|--------|---------|---------------|
+| 200 | OK | Successful GET, PATCH |
+| 201 | Created | Successful POST (create) |
+| 204 | No Content | Successful DELETE |
+| 400 | Bad Request | Invalid input, validation failure |
+| 401 | Unauthorized | Missing or invalid JWT token |
+| 403 | Forbidden | User doesn't own resource |
+| 404 | Not Found | Session/message not found |
+| 429 | Rate Limited | Too many requests |
+| 500 | Server Error | Backend failure |
 
-**Returns:**
+### Error Response Format
+
 ```json
 {
-  "deleted_count": 5
+  "detail": "Human-readable error message"
 }
 ```
 
----
-
-### Session Metrics Update
-
-**Task:** `update_session_metrics`
-**Trigger:** Per-session, async
-**Description:** Updates metrics for a specific session.
-
-**Parameters:**
+Or for structured errors:
 ```json
 {
-  "session_id": "uuid-string"
+  "error_code": "SESSION_NOT_FOUND",
+  "message": "The requested session does not exist",
+  "details": {}
 }
 ```
 
-**Returns:**
-```json
-{
-  "session_id": "uuid-string",
-  "status": "updated"
-}
-```
+### Frontend Error Handling
 
----
-
-### Attachment Virus Scan
-
-**Task:** `scan_attachments_for_viruses`
-**Trigger:** Per-attachment upload
-**Description:** Placeholder for virus scanning (production: integrate ClamAV).
-
-**Parameters:**
-```json
-{
-  "attachment_path": "/app/storage/attachments/file.pdf"
-}
-```
-
-**Returns:**
-```json
-{
-  "path": "/app/storage/attachments/file.pdf",
-  "status": "clean",
-  "scanned_at": "2024-01-15T10:30:00Z"
-}
-```
-
----
-
-### Attachment Integrity Verification
-
-**Task:** `verify_attachment_integrity`
-**Trigger:** Per-attachment
-**Description:** Verifies attachment exists and size is valid after upload.
-
-**Parameters:**
-```json
-{
-  "attachment_path": "/app/storage/attachments/file.pdf"
-}
-```
-
-**Returns:**
-```json
-{
-  "path": "/app/storage/attachments/file.pdf",
-  "exists": true,
-  "size": 1048576,
-  "verified_at": "2024-01-15T10:30:00Z"
-}
-```
-
----
-
-### Thumbnail Generation
-
-**Task:** `generate_thumbnail`
-**Trigger:** Per-image attachment
-**Description:** Generates thumbnail for image attachments.
-
-**Parameters:**
-```json
-{
-  "attachment_path": "/app/storage/attachments/image.jpg"
-}
-```
-
-**Returns:**
-```json
-{
-  "path": "/app/storage/attachments/image.jpg",
-  "thumbnail_path": "/app/storage/attachments/image.jpg.thumb",
-  "generated_at": "2024-01-15T10:30:00Z"
-}
-```
-
----
-
-### Action Execution
-
-**Task:** `execute_action`
-**Trigger:** Per-action request
-**Description:** Executes an action asynchronously (code execution, web search, API call).
-
-**Parameters:**
-```json
-{
-  "action_id": "uuid-string",
-  "action_type": "code_execution | web_search | api_call",
-  "params": {
-    "code": "print('hello')",
-    "query": "search term",
-    "endpoint": "https://api.example.com"
-  }
-}
-```
-
-**Returns:**
-```json
-{
-  "status": "completed",
-  "action_id": "uuid-string",
-  "output": "string or results array or response object"
-}
-```
-
----
-
-### Action Progress Streaming
-
-**Task:** `stream_action_progress`
-**Trigger:** During action execution
-**Description:** Streams action progress to WebSocket clients.
-
-**Parameters:**
-```json
-{
-  "action_id": "uuid-string",
-  "progress": 50.0
-}
-```
-
-**Returns:**
-```json
-{
-  "action_id": "uuid-string",
-  "progress": 50.0,
-  "timestamp": "2024-01-15T10:30:00Z"
-}
-```
-
----
-
-### Action Completion Notification
-
-**Task:** `notify_action_complete`
-**Trigger:** After action completes
-**Description:** Notifies clients that an action has completed.
-
-**Parameters:**
-```json
-{
-  "action_id": "uuid-string",
-  "result": {
-    "output": "results",
-    "status": "success"
-  }
-}
-```
-
-**Returns:**
-```json
-{
-  "action_id": "uuid-string",
-  "completed_at": "2024-01-15T10:30:00Z",
-  "result": {}
-}
-```
-
----
-
-### Action Rollback
-
-**Task:** `rollback_action`
-**Trigger:** On action failure
-**Description:** Rolls back a failed action.
-
-**Parameters:**
-```json
-{
-  "action_id": "uuid-string",
-  "reason": "Timeout exceeded"
-}
-```
-
-**Returns:**
-```json
-{
-  "action_id": "uuid-string",
-  "rolled_back_at": "2024-01-15T10:30:00Z",
-  "reason": "Timeout exceeded"
-}
-```
-
----
-
-## Error Responses
-
-All endpoints may return the following error responses:
-
-### 401 Unauthorized
-
-```json
-{
-  "detail": "Not authenticated"
-}
-```
-
-### 403 Forbidden
-
-```json
-{
-  "detail": "Role 'admin' required"
-}
-```
-
-### 404 Not Found
-
-```json
-{
-  "detail": "Session not found"
-}
-```
-
-### 422 Validation Error
-
-```json
-{
-  "detail": [
-    {
-      "loc": ["body", "field_name"],
-      "msg": "field required",
-      "type": "value_error.missing"
+```typescript
+// API client interceptor handles 401 automatically
+this.client.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      // Token expired - refresh and retry
+      localStorage.removeItem('auth_token')
+      const newToken = await ensureAuthToken()
+      if (newToken) {
+        error.config.headers.Authorization = `Bearer ${newToken}`
+        return this.client(error.config)
+      }
     }
-  ]
-}
-```
+    return Promise.reject(error)
+  }
+)
 
-### 429 Rate Limited
-
-```json
-{
-  "detail": "Rate limit exceeded"
-}
-```
-
-### 500 Internal Server Error
-
-```json
-{
-  "error_code": "INTERNAL_ERROR",
-  "message": "An internal error occurred",
-  "details": null
-}
+// WebSocket error handling
+wsClient.connect({
+  onError: (error: string) => {
+    console.error('WebSocket error:', error)
+    onError?.('Connection error occurred')
+  }
+})
 ```
 
 ---
 
-## Enums
+## Data Models
 
-### AcceleratorTypeEnum
+### Session
 
-| Value | Description |
-|-------|-------------|
-| `basic` | Basic accelerator |
-| `advanced` | Advanced accelerator |
-| `enterprise` | Enterprise accelerator |
+| Field | Type | Description |
+|-------|------|-------------|
+| `session_id` | UUID | Unique identifier |
+| `user_id` | string | Owner user ID |
+| `engagement_id` | string\|null | Optional engagement reference |
+| `project_id` | string\|null | Optional project reference |
+| `accelerator_type` | string | basic\|advanced\|enterprise |
+| `conversation_metadata` | object | Custom metadata |
+| `status` | string | active\|paused\|completed\|archived |
+| `started_at` | datetime | Session start time |
+| `last_active_at` | datetime | Last activity time |
+| `created_at` | datetime | Creation time |
+| `updated_at` | datetime | Last update time |
 
-### MessageRoleEnum
+### Message
 
-| Value | Description |
-|-------|-------------|
-| `user` | User message |
-| `assistant` | AI assistant message |
-| `system` | System message |
+| Field | Type | Description |
+|-------|------|-------------|
+| `message_id` | UUID | Unique identifier |
+| `session_id` | UUID | Parent session |
+| `role` | string | user\|assistant\|system |
+| `content` | string | Message text (max 10000 chars) |
+| `message_metadata` | object | Custom metadata |
+| `parent_message_id` | UUID\|null | For threading |
+| `created_at` | datetime | Creation time |
 
-### SessionStatusEnum
+### WebSocket Events
 
-| Value | Description |
-|-------|-------------|
-| `active` | Session is active |
-| `paused` | Session is paused |
-| `completed` | Session completed normally |
-| `archived` | Session archived (soft deleted) |
-
-### ActionStatus
-
-| Value | Description |
-|-------|-------------|
-| `pending` | Action not yet started |
-| `running` | Action in progress |
-| `completed` | Action completed successfully |
-| `failed` | Action failed |
-
----
-
-## Rate Limits
-
-Default rate limits (configurable via environment):
-
-| Endpoint | Limit |
-|----------|-------|
-| `/api/v1/chat` | 60 requests/minute/user |
-| `/api/v1/chat/stream` | 30 requests/minute/user |
-| Other authenticated endpoints | 100 requests/minute/user |
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `user_message` | C→S | User sends message |
+| `message_received` | S→C | Server acknowledges receipt |
+| `stream_chunk` | S→C | Partial response content |
+| `message_complete` | S→C | Full response delivered |
+| `typing_start` | C→S | User started typing |
+| `typing_stop` | C→S | User stopped typing |
+| `typing_indicator` | S→C | Another user typing |
+| `ping` | C→S | Heartbeat |
+| `pong` | S→C | Heartbeat response |
+| `error` | S→C | Error occurred |
 
 ---
 
-*Generated for v1.0.0*
+## Notes for Frontend Developers
+
+### Important UUID Validation
+
+The frontend WebSocket client validates session IDs before connecting:
+
+```typescript
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+if (!uuidRegex.test(sessionId)) {
+  console.log('WebSocket: Invalid sessionId, skipping connect:', sessionId)
+  return
+}
+```
+
+If the sessionId is "new" or invalid, WebSocket connection is skipped.
+
+### Message Deduplication
+
+When `message_complete` is received with a `message_id` that matches the pending optimistic message ID, the frontend discards the optimistic message and uses the real one from the server instead.
+
+### Streaming State Management
+
+The streaming cursor animation uses `animate-cursor` CSS class with `background-color: var(--primary)`.
+
+### ChatInput Never Disabled
+
+The ChatInput component always has `disabled={false}`. The WebSocket connection state is handled separately - if not connected, `sendMessage()` shows a warning but the UI remains usable.
+
+### Axios Interceptor Logic
+
+The API client automatically:
+1. Gets token from localStorage on each request
+2. If no token, calls `ensureAuthToken()` to fetch one
+3. Attaches `Authorization: Bearer <token>` header
+4. On 401 response, removes old token, fetches new one, retries request
+
+### WebSocket Reconnection
+
+The WebSocket client uses exponential backoff:
+- Attempt 1: 3s delay
+- Attempt 2: 6s delay
+- Attempt 3: 12s delay
+- Max 5 attempts by default
+
+### CSS Variables for Theming
+
+```css
+--background: #020617;
+--card: #111827;
+--foreground: #f8fafc;
+--muted: #94a3b8;
+--primary: #3b82f6;
+--accent: #8b5cf6;
+--border: #1e293b;
+```
+
+### Required Environment Variables
+
+**Frontend (.env.local):**
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000
+```
+
+**Backend (.env):**
+```
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/conversation_ai
+REDIS_URL=redis://redis:6379/0
+JWT_SECRET_KEY=your-secret-key
+EURI_API_KEY=your-api-key
+```
